@@ -252,7 +252,7 @@ function makeLoginParameters(useConfiguredStart=true){
  p.firstName=cfg.bot.firstName;
  p.lastName=cfg.bot.lastName;
  p.password=cfg.bot.password;
- p.start=useConfiguredStart?normalizeStartLocation(cfg.bot.start):'last';
+ p.start=(process.env.LOGIN_START_LAST==='1'||!useConfiguredStart)?'last':normalizeStartLocation(cfg.bot.start);
  const loginURI=process.env.LOGIN_URI||process.env.GRID_LOGIN_URI||'http://www.alifevirtual.com:8002/';
  const viewerChannel=process.env.VIEWER_CHANNEL||'Firestorm-Alife-Virtual';
  const viewerVersion=process.env.VIEWER_VERSION||'7.2.3.1';
