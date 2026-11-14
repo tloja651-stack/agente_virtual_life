@@ -10,6 +10,21 @@ let cfg, loginParameters, bot, botUUID=null, intervaloAnuncio=null, reconnectTim
 let hasConnectedOnce=false;
 let autoHomeUsed=false;
 let teleportGraceUntil=0;
+// Algumas grids OpenSim retornam 404 em capabilities opcionais na troca de região.
+// Somente uma rejeição HTTP 404 durante a janela de teleporte é tolerada;
+// erros fora dessa situação continuam sendo fatais para não ocultar falhas.
+process.on('unhandledRejection', (reason) => {
+ const status = Number(reason?.response?.statusCode || reason?.statusCode || 0);
+ const message = String(reason?.message || reason || 'erro desconhecido');
+ if (status === 404 && Date.now() < teleportGraceUntil && !shuttingDown) {
+   console.warn('[Alife TP] Requisição HTTP 404 durante troca de região; mantendo bot ativo. Detalhe:', message);
+   return;
+ }
+ console.error('[Erro assíncrono não tratado]', message);
+ shuttingDown = true;
+ process.exitCode = 1;
+ setTimeout(() => process.exit(1), 100).unref();
+});
 const avataresCumprimentados = new Set();
 
 // IA dinâmica por IM: a API cria todas as mensagens e decide quando se despedir.

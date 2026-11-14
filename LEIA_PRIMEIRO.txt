@@ -1,0 +1,7 @@
+NEXUS Agent Alife V4 - correcao direcionada
+
+Substitua agent.js e botsl.js no repositorio Agent. package.json e patch-login.js incluidos como referencia; nao e necessario alterar o Master ou Aiven.
+
+Mudancas: aceita hop://www.alifevirtual.com:8002/Regiao/X/Y/Z na rota /teleport; trata somente rejeicoes de Promise com HTTP 404 durante janela de teleporte de 60s. Outros erros continuam fatais.
+
+LIMITACAO: a origem exata do 404 na biblioteca ainda nao foi identificada. Se o erro for uncaughtException em vez de unhandledRejection, esta alteracao nao impedira a queda. Teste primeiro com um bot. Nao trata todos os 404 indiscriminadamente.
