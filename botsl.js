@@ -413,16 +413,22 @@ function iniciarConexaoBot(){ if(shuttingDown)return; slOnline=false; notifyPare
  configurarMonitorDeConexao();
  configurarRotinasAutomaticas();
  startRegionWatch();
- // Home automático SOMENTE na primeira conexão deste processo.
- // Se você mandar o bot para outro lugar, reconexões futuras usarão "last" e ele não volta para Home/Start.
- if(primeiraConexao&&cfg.home&&cfg.home.autoGoHome&&!autoHomeUsed){
-   autoHomeUsed=true;
-   await goHomeFromConfig();
- } else if(primeiraConexao&&cfg.home&&cfg.home.autoSit&&cfg.home.objectUUID){
-   // Auto Sit também funciona quando o bot já inicia na região configurada,
-   // sem exigir Auto Go Home.
-   agendarAutoSitNaRegiao();
+ // Reaplica o destino do painel em TODA conexão bem-sucedida, inclusive reconexões.
+ // O login continua em "last" para evitar a falha XML-RPC do OpenSim.
+ const destinoAutomatico=String(cfg.home?.url||cfg.bot?.start||process.env.ALIFE_HOME_HOP_URL||'').trim();
+ if(destinoAutomatico && /^(?:hop:\/\/|https?:\/\/|secondlife:\/\/)/i.test(destinoAutomatico)){
+   console.log(`[Auto TP] Conexão ${primeiraConexao?'inicial':'restabelecida'}: destino do painel ${destinoAutomatico}`);
+   try{
+     const resultado=await processTeleportUrl(destinoAutomatico,{autoSit:!!cfg.home?.autoSit});
+     console.log('[Auto TP] '+resultado);
+     if(cfg.home?.autoSit&&cfg.home?.objectUUID)agendarAutoSitNaRegiao();
+   }catch(err){console.error('[Auto TP] Falha ao iniciar teleporte:',err.message||err);}
+ }else if(destinoAutomatico){
+   console.warn('[Auto TP] Destino não é URL de teleporte válida; confira o endereço no painel.');
+ }else{
+   console.log('[Auto TP] Nenhum endereço configurado no painel.');
  }
+
 }).catch(err=>{ console.error('Erro detectado no login ou conexão:',err.message||err); agendarReconexao('erro no login ou conexão: '+(err.message||err),hasConnectedOnce?Number(cfg.features.regionRecoveryMs||process.env.SL_REGION_RECOVERY_DELAY_MS||90000):Number(cfg.features.reconnectMs||15000)); }); }
 function configurarRotinasAutomaticas(){ limparRotinasAutomaticas(); if(cfg.features.localAnnouncementEnabled){ intervaloAnuncio=setInterval(()=>{ if(bot.clientCommands&&bot.clientCommands.comms){ bot.clientCommands.comms.say(cfg.features.announcementMessage,0); console.log('[Anúncio] Mensagem automática enviada no chat local.'); } },Number(cfg.features.announcementMinutes||15)*60*1000); }
  if(false && cfg.features.welcomeEnabled&&bot.clientEvents.onNearbyChat){ bot.clientEvents.onNearbyChat.subscribe(e=>{ const id=e.from.toString(); if(id===botUUID||e.fromName==='Sistema')return; if(!avataresCumprimentados.has(id)){ avataresCumprimentados.add(id); console.log(`[Boas-vindas] Avatar detectado: ${e.fromName}. Enviando IM...`); setTimeout(()=>bot.clientCommands.comms.sendInstantMessage(e.from,cfg.features.welcomeMessage).catch(er=>console.error('Erro ao enviar IM:',er.message||er)),2000); } }); }
